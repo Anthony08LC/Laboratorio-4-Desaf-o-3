@@ -1,0 +1,18 @@
+[SIMULADA] Resumen generado localmente sin Gemini.
+
+Cálculos verificables:
+Ventas totales: 27393.53
+Transacciones: 200
+Compras: 118
+Tasa de conversión: 59.0%
+Monto medio por compra: 232.15
+Monto medio por transacción: 250.75
+Ingreso medio por transacción: 136.97
+Top categorías por ventas: Electrónica 7324.97, Ropa 5520.74, Libros 5157.23
+
+Interpretación:
+Texto de demostración: no se realizó interpretación con un modelo de lenguaje.
+
+Recomendaciones:
+- Configurar GEMINI_API_KEY para obtener recomendaciones reales.
+- Revisar los KPIs y gráficos mostrados en la aplicación.

@@ -1,0 +1,15 @@
+Eres un analista de negocio. Redacta un resumen ejecutivo en español, breve (máximo 200 palabras), para un gerente.
+Usa SOLO las estadísticas agregadas siguientes; no inventes cifras.
+
+Estadísticas agregadas:
+{stats}
+
+Estructura obligatoria, con estos títulos exactos:
+Cálculos verificables:
+(lista de los KPIs usados con su valor, tal como aparecen arriba)
+
+Interpretación:
+(qué sugieren los datos; indica que son inferencias)
+
+Recomendaciones:
+(2 o 3 acciones concretas)

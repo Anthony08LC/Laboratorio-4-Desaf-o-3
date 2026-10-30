@@ -1,0 +1,54 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.8, pytest-9.2.0, pluggy-1.7.0 -- D:\Cursos\Desarrollo Asistido con Claude Code\Laboratorio 4\.venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: D:\Cursos\Desarrollo Asistido con Claude Code\Laboratorio 4
+configfile: pytest.ini
+testpaths: tests
+plugins: anyio-4.15.1
+collecting ... collected 43 items
+
+tests/test_app.py::test_initial_screen_shows_key_warnings PASSED         [  2%]
+tests/test_app.py::test_end_to_end_with_sample_and_simulated_apis PASSED [  4%]
+tests/test_app.py::test_history_keeps_at_most_five PASSED                [  6%]
+tests/test_eleven_client.py::test_without_key_returns_simulated_wav PASSED [  9%]
+tests/test_eleven_client.py::test_success_with_mock PASSED               [ 11%]
+tests/test_eleven_client.py::test_voice_id_from_env PASSED               [ 13%]
+tests/test_eleven_client.py::test_timeout_falls_back PASSED              [ 16%]
+tests/test_eleven_client.py::test_http_error_falls_back PASSED           [ 18%]
+tests/test_eleven_client.py::test_non_audio_response_falls_back PASSED   [ 20%]
+tests/test_eleven_client.py::test_long_text_is_truncated PASSED          [ 23%]
+tests/test_eleven_client.py::test_simulated_audio_is_valid_wav PASSED    [ 25%]
+tests/test_gemini_client.py::test_without_key_returns_simulated PASSED   [ 27%]
+tests/test_gemini_client.py::test_success_with_mock_client PASSED        [ 30%]
+tests/test_gemini_client.py::test_model_from_env PASSED                  [ 32%]
+tests/test_gemini_client.py::test_network_error_falls_back PASSED        [ 34%]
+tests/test_gemini_client.py::test_client_creation_error_falls_back PASSED [ 37%]
+tests/test_gemini_client.py::test_empty_response_falls_back PASSED       [ 39%]
+tests/test_gemini_client.py::test_bad_format_is_flagged PASSED           [ 41%]
+tests/test_gemini_client.py::test_key_from_env_uses_default_factory PASSED [ 44%]
+tests/test_gemini_client.py::test_default_factory_builds_real_client_offline PASSED [ 46%]
+tests/test_gemini_client.py::test_template_has_placeholder_and_sections PASSED [ 48%]
+tests/test_kpis.py::test_validate_csv_and_compute_kpis PASSED            [ 51%]
+tests/test_kpis.py::test_validate_csv_normalizes_types PASSED            [ 53%]
+tests/test_kpis.py::test_missing_columns PASSED                          [ 55%]
+tests/test_kpis.py::test_less_than_100_rows PASSED                       [ 58%]
+tests/test_kpis.py::test_amount_not_numeric PASSED                       [ 60%]
+tests/test_kpis.py::test_is_purchase_invalid PASSED                      [ 62%]
+tests/test_kpis.py::test_invalid_date PASSED                             [ 65%]
+tests/test_kpis.py::test_unreadable_file PASSED                          [ 67%]
+tests/test_kpis.py::test_empty_file PASSED                               [ 69%]
+tests/test_kpis.py::test_mixed_boolean_formats PASSED                    [ 72%]
+tests/test_kpis.py::test_missing_values_rule PASSED                      [ 74%]
+tests/test_kpis.py::test_accepts_file_like_buffer PASSED                 [ 76%]
+tests/test_kpis.py::test_compute_kpis_without_purchases PASSED           [ 79%]
+tests/test_kpis.py::test_total_sales_only_counts_purchases PASSED        [ 81%]
+tests/test_kpis.py::test_category_breakdown PASSED                       [ 83%]
+tests/test_kpis.py::test_aggregate_for_gemini_is_short_and_has_no_rows PASSED [ 86%]
+tests/test_sample_data.py::test_sample_csv_has_required_columns_and_rows PASSED [ 88%]
+tests/test_sample_data.py::test_sample_is_reproducible PASSED            [ 90%]
+tests/test_session.py::test_keeps_last_five_newest_first PASSED          [ 93%]
+tests/test_session.py::test_max_history_from_env PASSED                  [ 95%]
+tests/test_visuals.py::test_figures_export_png PASSED                    [ 97%]
+tests/test_visuals.py::test_timeseries_fills_missing_days_with_zero PASSED [100%]
+
+============================= 43 passed in 6.35s ==============================
