@@ -1,155 +1,143 @@
 # spec.md
 
 ## Resumen
-Documento técnico que especifica **qué** debe hacer la aplicación del Desafío 3 (Analista ejecutivo de datos con voz) y **cómo** debe comportarse. Contiene requisitos funcionales y no funcionales, arquitectura, contratos de entrada/salida, variables de entorno, manejo de errores, estrategia de pruebas y criterios de aceptación.
+Documento técnico que especifica **qué** hace la aplicación del Desafío 3 (Analista ejecutivo de datos con voz) y **cómo** se comporta. Contiene requisitos funcionales y no funcionales, arquitectura, contratos de entrada/salida, variables de entorno, manejo de errores, estrategia de pruebas y criterios de aceptación. Refleja el código de la versión entregada.
 
 ---
 
 ## Requisitos funcionales (RF)
-**RF-01** — **Carga de archivo**: La interfaz permitirá subir un archivo CSV.  
-**RF-02** — **Validación de CSV**: Validar columnas obligatorias: **order_id, date, category, amount, is_purchase**; verificar tipos, detectar filas faltantes y exigir ≥100 filas. Mostrar errores amigables.  
-**RF-03** — **Cálculo de KPIs**: Calcular al menos cuatro KPIs verificables: **total_sales, total_transactions, purchases_count, avg_amount_per_purchase**; además incluir **conversion_rate** y **ticket_mean**. Mostrar fórmula y valor.  
-**RF-04** — **Visualizaciones**: Generar dos visualizaciones: (a) serie temporal de ventas por fecha y (b) distribución por categoría. Permitir descarga de las imágenes.  
-**RF-05** — **Agregación para Gemini**: Preparar y enviar solo estadísticas agregadas (KPIs y descriptores) a Gemini; nunca enviar filas individuales.  
-**RF-06** — **Generación de resumen**: Solicitar a Gemini un **resumen ejecutivo** que incluya: **Cálculos verificables**, **Interpretación**, y **Recomendaciones**.  
-**RF-07** — **Síntesis de voz**: Enviar el texto del resumen a ElevenLabs y reproducir el audio en la interfaz con controles de reproducir/pausar.  
-**RF-08** — **Historial de sesión**: Mantener historial local de al menos 5 resúmenes generados durante la sesión.  
-**RF-09** — **Fallbacks**: Si falta clave o la API falla, mostrar mensajes claros y ofrecer una **respuesta simulada** marcada como *SIMULADA*.  
-**RF-10** — **Exportar informe**: Permitir exportar un resumen ejecutivo en texto (archivo .txt) y descargar las visualizaciones (opcional).
+**RF-01** — **Carga de archivo**: La interfaz permite subir un CSV (máx. 10 MB) o usar `data/sample_sales.csv`.  
+**RF-02** — **Validación de CSV**: Columnas obligatorias **order_id, date, category, quantity, amount, is_purchase** (se ignoran columnas adicionales; se toleran mayúsculas, espacios y BOM de Excel). Se exigen ≥100 filas leídas y ≥100 filas válidas tras la limpieza. Se rechaza el archivo, indicando número de línea y valor, si hay: `order_id` duplicado, `quantity` no entera o < 1, `amount` no numérico o negativo, fecha inexistente o fuera del formato AAAA-MM-DD, `is_purchase` no reconocido.  
+**RF-03** — **Calidad de datos**: Las filas con `order_id`, `date`, `quantity`, `amount` o `is_purchase` vacíos se descartan; `category` vacía pasa a "Sin categoría". La interfaz muestra filas leídas, válidas, descartadas y celdas vacías por columna.  
+**RF-04** — **Cálculo de KPIs**: Ocho KPIs calculados con Python (ver tabla), cada uno con nombre, valor, fórmula y descripción. Las divisiones entre cero devuelven 0.  
+**RF-05** — **Visualizaciones**: (a) evolución de ventas por día (periodos ≤31 días) o por semana (periodos mayores, con las semanas incompletas del periodo marcadas); (b) ventas por categoría con monto y participación. Ambas descargables en PNG.  
+**RF-06** — **Agregación para Gemini**: Texto con periodo, filas analizadas, los 8 KPIs, ventas/participación/unidades por categoría y ventas por mes; nunca filas individuales.  
+**RF-07** — **Generación de resumen**: Gemini devuelve JSON (`resumen`, `hallazgos`, `recomendaciones`). Los datos calculados se muestran aparte, nunca redactados por el modelo. Si el texto contiene cifras que no coinciden (admitiendo redondeo) con las estadísticas, se muestra una advertencia.  
+**RF-08** — **Síntesis de voz**: El resumen, hallazgos y recomendaciones se envían a ElevenLabs (máx. 2 500 caracteres) y el audio se reproduce en la interfaz.  
+**RF-09** — **Historial de sesión**: Se guardan en memoria los últimos `MAX_HISTORY` (5 por defecto) resúmenes, indicando si el texto o el audio fueron simulados.  
+**RF-10** — **Fallbacks**: Sin clave o ante un fallo de la API se muestra el motivo y una respuesta **SIMULADA** claramente marcada (texto de demostración / tono WAV que no es voz).  
+**RF-11** — **Exportar informe**: Descarga del resumen en `.txt` con los datos calculados y la interpretación en secciones separadas.  
+**RF-12** — **Coherencia**: Si se carga otro archivo, no se muestra el resumen generado con el archivo anterior.
+
+### KPIs implementados (`src/kpis.py`, `KPI_DEFINITIONS`)
+| Clave | Nombre | Fórmula |
+|---|---|---|
+| `total_sales` | Ventas totales | Σ amount con is_purchase = True |
+| `total_transactions` | Transacciones | número de filas válidas |
+| `purchases_count` | Compras | filas con is_purchase = True |
+| `conversion_rate` | Tasa de conversión | purchases_count / total_transactions |
+| `avg_amount_per_purchase` | Ticket medio | total_sales / purchases_count |
+| `units_sold` | Unidades vendidas | Σ quantity con is_purchase = True |
+| `avg_units_per_purchase` | Unidades por compra | units_sold / purchases_count |
+| `avg_unit_price` | Precio medio por unidad | total_sales / units_sold |
+
+Métrica categórica: `category_breakdown` (ventas, compras, unidades y participación por categoría).
 
 ---
 
 ## Requisitos no funcionales (RNF)
-**RNF-01** — **Seguridad de credenciales**: Las claves deben leerse desde `.env` y **no** almacenarse en el repositorio. Incluir `.env.example`.  
-**RNF-02** — **Privacidad**: No enviar datos fila a fila a Gemini; solo estadísticas agregadas. Mostrar aviso al usuario.  
-**RNF-03** — **Robustez**: Manejar fallos de red, ausencia de clave y respuestas inválidas de las APIs con mensajes amigables.  
-**RNF-04** — **Portabilidad**: Ejecutable localmente en Python 3.11+; dependencias en `requirements.txt`.  
-**RNF-05** — **Testabilidad**: Tener tests automatizados que cubran validación de CSV, cálculo de KPIs y simulación de fallos de API (mocks).  
-**RNF-06** — **Rendimiento**: Procesamiento de CSV de 100–10,000 filas en < 5s en hardware de desarrollo típico (estimado).  
-**RNF-07** — **Accesibilidad**: Controles de audio accesibles y textos legibles; colores con contraste suficiente.
+**RNF-01** — **Seguridad de credenciales**: Las claves se leen desde `.env` (excluido por `.gitignore`); `.env.example` sin valores. Los mensajes y logs nunca incluyen claves ni el texto de las excepciones de las APIs.  
+**RNF-02** — **Privacidad**: Solo estadísticas agregadas a Gemini; aviso visible en la interfaz. El dataset se identifica en logs con un hash.  
+**RNF-03** — **Robustez**: Los clientes nunca lanzan excepciones a la interfaz; un CSV inválido muestra un error y detiene el flujo sin cerrar la app.  
+**RNF-04** — **Portabilidad**: Python 3.11+ (probado con 3.14.8 en Windows); dependencias en `requirements.txt`.  
+**RNF-05** — **Testabilidad**: Pruebas automatizadas con mocks para Gemini y ElevenLabs; los tests fuerzan las claves a vacío.  
+**RNF-06** — **Rendimiento**: Procesamiento de CSV de 100–10 000 filas en < 5 s en hardware de desarrollo típico (estimado, no medido formalmente).  
+**RNF-07** — **Accesibilidad**: Reproductor de audio nativo; gráficos de un solo color con etiquetas de valor; el modo simulado se indica con texto, no solo con color.
 
 ---
 
 ## Arquitectura y flujo de datos
-**Componentes principales**
-- **Interfaz (Streamlit / app.py)**: carga de CSV, visualización de KPIs y gráficos, botones para generar resumen y reproducir audio, historial de sesión.  
-- **Módulo de validación y KPIs (`src/kpis.py`)**: validación de columnas/tipos, limpieza, cálculo de KPIs y preparación de estadísticas agregadas.  
-- **Módulo de visualizaciones (`src/visuals.py`)**: generación de gráficos (matplotlib/plotly) y exportación.  
-- **Integración Gemini (`src/gemini_client.py`)**: plantilla de prompt, envío de estadísticas agregadas, manejo de errores y timeouts.  
-- **Integración ElevenLabs (`src/eleven_client.py`)**: envío de texto a TTS, recepción de audio (stream o archivo temporal) y control de reproducción.  
-- **Persistencia de sesión (`src/session.py`)**: historial en memoria (o archivo temporal) con últimos 5 resúmenes.  
-- **Tests (`tests/`)**: unitarios y de integración con mocks para APIs.
+**Componentes**
+- **Interfaz (`app.py`, Streamlit)**: barra lateral (carga, estado de claves, aviso de privacidad), calidad de datos, KPIs, gráficos, resumen, recomendaciones, audio e historial.  
+- **Validación y KPIs (`src/kpis.py`)**: `validate_csv`, `compute_kpis`, `format_kpi`, `category_breakdown`, `monthly_sales`, `aggregate_for_gemini`.  
+- **Visualizaciones (`src/visuals.py`)**: matplotlib (`timeseries_figure`, `category_figure`, `fig_to_png`).  
+- **Integración Gemini (`src/gemini_client.py`)**: SDK oficial `google-genai`, plantilla `src/prompts/summary_template.txt`, salida JSON con esquema, clasificación de errores y verificación de cifras.  
+- **Integración ElevenLabs (`src/eleven_client.py`)**: API REST oficial `POST /v1/text-to-speech/{voice_id}` con `requests`; fallback a tono WAV.  
+- **Historial (`src/session.py`)**: `SessionHistory` en memoria (deque).  
+- **Datos de ejemplo (`data/generate_sample.py`)**: 200 pedidos sintéticos con semilla fija.
 
 **Flujo de datos**
-1. Usuario sube CSV → Interfaz.  
-2. Interfaz llama a `kpis.validate_csv` → DataFrame validado.  
-3. `kpis.compute_kpis` calcula KPIs → resultados mostrados en UI.  
-4. `visuals` genera gráficos a partir del DataFrame → mostrados y disponibles para descarga.  
-5. `kpis.aggregate_for_gemini` prepara texto con estadísticas agregadas → enviado a `gemini_client`.  
-6. Gemini devuelve resumen → mostrado en UI.  
-7. Texto del resumen enviado a `eleven_client` → audio reproducible.  
-8. Historial de resumenes guardado en `session`.
+1. Usuario sube CSV → `validate_csv` → DataFrame tipado + `attrs["quality"]`.  
+2. `compute_kpis` y `visuals` → KPIs y gráficos en la interfaz.  
+3. `aggregate_for_gemini(df)` → texto agregado → `generate_summary` → resumen, hallazgos, recomendaciones.  
+4. `speech_text` → `synthesize_audio` → audio reproducible.  
+5. `format_report` → historial y exportación `.txt`.
 
 ---
 
 ## Contratos de entrada/salida (I/O)
-### Carga CSV (UI → backend)
-- **Entrada**: archivo CSV multipart.  
-- **Salida**: JSON interno / DataFrame; en UI: tabla de validación y mensajes.
+### `validate_csv(source: str | IO) -> DataFrame`
+- **Salida**: columnas `order_id` (str), `date` (datetime), `category` (str), `quantity` (int), `amount` (float), `is_purchase` (bool); `df.attrs["quality"] = {rows_read, rows_valid, dropped_rows, missing}`.  
+- **Errores**: `ValueError` con mensaje para el usuario (ver "Manejo de errores").
 
-### `validate_csv(path: str) -> DataFrame`
-- **Entrada**: ruta a CSV o buffer.  
-- **Salida**: DataFrame con columnas normalizadas (`date` datetime, `amount` float, `is_purchase` boolean).  
-- **Errores**: `ValueError` con mensajes: *Columnas faltantes*, *menos de 100 filas*, *amount no numérico*, *is_purchase inválido*.
+### `compute_kpis(df) -> Dict[str, float]`
+- Las 8 claves de la tabla de KPIs, redondeadas (2 decimales; 4 en `conversion_rate`).
 
-### `compute_kpis(df: DataFrame) -> Dict[str, float]`
-- **Entrada**: DataFrame validado.  
-- **Salida**: Diccionario con KPIs: `total_sales`, `total_transactions`, `purchases_count`, `avg_amount_per_transaction`, `avg_amount_per_purchase`, `conversion_rate`, `ticket_mean`.
+### `aggregate_for_gemini(df) -> str`
+- Texto plano de ≈600 caracteres con estadísticas agregadas (≤1 000 verificado en pruebas).
 
-### `aggregate_for_gemini(kpis: Dict) -> str`
-- **Entrada**: KPIs.  
-- **Salida**: Texto plano con estadísticas agregadas (máx. 300–500 caracteres recomendado).
+### `generate_summary(aggregated_stats, prompt_template=None, *, api_key=None, client_factory=None) -> Dict`
+- **Salida**: `{facts, summary, findings: [str], recommendations: [str], simulated: bool, error: str|None, warning: str|None}`. Nunca lanza excepciones.
 
-### `generate_summary(aggregated_stats: str, prompt_template: str) -> Dict`
-- **Entrada**: texto de estadísticas y plantilla de prompt.  
-- **Salida**: `{ "text": "...", "simulated": False }` o `{ "text": "...", "simulated": True }` en fallback.  
-- **Errores**: devolver objeto con `simulated: True` y mensaje de error en logs.
-
-### `synthesize_audio(text: str) -> bytes or url`
-- **Entrada**: texto del resumen.  
-- **Salida**: bytes de audio o URL/stream temporal para reproducción.  
-- **Errores**: fallback a audio simulado (tono TTS local o mensaje hablado por síntesis simple).
+### `synthesize_audio(text, *, api_key=None, voice_id=None) -> Dict`
+- **Salida**: `{audio: bytes, mime: "audio/mpeg"|"audio/wav", simulated: bool, error: str|None, truncated: bool}`. Nunca lanza excepciones.
 
 ---
 
-## Variables de entorno (obligatorias y opcionales)
-**Obligatorias (leer desde `.env`)**
-- `GEMINI_API_KEY` — clave para Gemini (si no está, usar modo simulado).  
-- `ELEVENLABS_API_KEY` — clave para ElevenLabs (si no está, usar modo simulado).
+## Variables de entorno
+**Claves (desde `.env`; vacías → modo simulado)**
+- `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`.
 
 **Opcionales**
-- `ELEVENLABS_VOICE_ID` — id de la voz a usar; si no, usar voz por defecto del plan Free.  
-- `APP_ENV` — `development` | `production`.  
-- `MAX_HISTORY` — número de resúmenes a mantener en sesión (por defecto 5).
-
-**Archivos**
-- `.env.example` con variables sin valores reales.  
-- `.gitignore` debe incluir `.env` y archivos temporales de audio.
+- `GEMINI_MODEL` — por defecto `gemini-3.6-flash`.  
+- `ELEVENLABS_VOICE_ID` — por defecto `21m00Tcm4TlvDq8ikWAM`.  
+- `MAX_HISTORY` — por defecto 5 (mínimo 1).
 
 ---
 
 ## Manejo de errores y mensajes al usuario
-**Errores de entrada**
-- **Archivo no legible** → "No se pudo leer el archivo. Verifica que sea un CSV válido."  
-- **Columnas faltantes** → "Faltan columnas obligatorias: X, Y. Revisa el formato del CSV."  
-- **Filas insuficientes** → "El archivo debe tener al menos 100 filas; encontrado N."
+**Errores de entrada** (prefijo en la UI: "El archivo no cumple los requisitos.")
+- Archivo vacío o no legible → "No se pudo leer el archivo. Verifica que sea un CSV válido guardado en UTF-8."  
+- Columnas faltantes → "Faltan columnas obligatorias: X. Columnas encontradas: …"  
+- Filas insuficientes → "El archivo debe tener al menos 100 filas; encontrado N." / "Tras descartar K fila(s) con valores faltantes quedan N filas válidas…"  
+- Tipos/valores → "amount no numérico: 1 fila(s); p. ej. línea 102: 'abc'." (análogo para quantity, date, is_purchase, order_id duplicado, amount negativo).
 
-**Errores de integración**
-- **Falta de clave (Gemini/ElevenLabs)** → Mostrar banner: "Clave de [Gemini/ElevenLabs] no configurada. Usando respuesta simulada marcada como SIMULADA."  
-- **Timeout o error API** → "Error al comunicarse con [servicio]. Intenta de nuevo más tarde. Mostrando respuesta simulada."  
-- **Respuesta inesperada de Gemini** → Registrar en logs y mostrar: "La respuesta del modelo no cumple el formato esperado; revise los logs."
+**Errores de integración** (siempre seguidos de la respuesta SIMULADA)
+| Situación | Gemini | ElevenLabs |
+|---|---|---|
+| Sin clave | Clave no configurada | Clave no configurada |
+| Clave inválida | HTTP 400 "API key" / 401 / 403 | HTTP 401 |
+| Cuota agotada | HTTP 429 / `RESOURCE_EXHAUSTED` | `detail.status = quota_exceeded` |
+| Límite de plan o velocidad | — | HTTP 402 (voz de pago) / HTTP 429 |
+| Modelo no disponible | HTTP 404 | — |
+| Red / timeout | `httpx.TransportError`, `TimeoutError` | `requests.ConnectionError`, `Timeout` |
+| Respuesta inválida | JSON sin las claves esperadas | respuesta no `audio/*` |
 
-**Logs y trazabilidad**
-- Registrar en archivo local (o consola) las solicitudes a Gemini y ElevenLabs **sin** incluir claves ni datos sensibles. Guardar muestras de prompts y respuestas (hash de dataset si se desea trazabilidad).
+**Logs**: tipo de excepción, código HTTP, modelo/voz y hash de las estadísticas; nunca claves.
 
 ---
 
 ## Estrategia de pruebas
-**Unit tests**
-- Validación CSV: columnas faltantes, tipos incorrectos, filas insuficientes.  
-- Cálculo de KPIs: casos con compras y sin compras; verificación de sumas y promedios.  
-- `aggregate_for_gemini`: formato y contenido mínimo.
-
-**Integration tests (con mocks)**
-- Simular respuestas exitosas de Gemini y ElevenLabs.  
-- Simular fallos: ausencia de clave, timeout, respuesta inválida.  
-- Verificar que la UI muestra fallback simulado y no bloquea.
-
-**Manual tests**
-- Carga de `data/sample_sales.csv` (≥100 filas) y verificación end-to-end: KPIs, gráficos, texto y audio.  
-- Prueba de descarga de gráficos y exportación de resumen en texto.  
-- Captura de pantalla o video corto mostrando ruta feliz y un fallo simulado.
-
-**Cobertura mínima**
-- Al menos una prueba automatizada que valide el cálculo de un KPI y una prueba que simule ausencia de clave.
+**Unitarias**: validación CSV (vacío, solo encabezado, binario, BOM, separador incorrecto, columnas faltantes, <100 filas, tipos inválidos, fechas inexistentes, duplicados, faltantes), KPIs (valores conocidos, sin compras), formato, desglose por categoría y mes, agregación sin filas, gráficos (títulos, etiquetas, totales).  
+**Integración con mocks**: Gemini (éxito, cuota, clave inválida, permiso, modelo, servidor, red, timeout, formato inválido, cifras no verificables, claves no expuestas) y ElevenLabs (éxito, voz, red, 401, cuota, 402, 429, 500, contenido no audio, truncado).  
+**Interfaz**: `streamlit.testing.AppTest` sin claves (avisos, KPIs, flujo completo simulado, historial).  
+**Manual pendiente**: ejecución con claves reales de Gemini y ElevenLabs.
 
 ---
 
 ## Criterios de aceptación por funcionalidad
-- **Carga y validación**: Al subir `data/sample_sales.csv`, la app muestra validación exitosa y KPIs calculados.  
-- **KPIs**: Los 4 KPIs principales están presentes y coinciden con cálculos locales verificables.  
-- **Visualizaciones**: Ambos gráficos se generan y pueden descargarse.  
-- **Resumen**: Gemini (o simulación) devuelve un texto que incluye **Cálculos verificables** y **Recomendaciones**.  
-- **Audio**: ElevenLabs (o simulación) produce audio reproducible con controles.  
-- **Seguridad**: `.env` no está en el repo; `.env.example` presente.  
-- **Pruebas**: `pytest` ejecuta y pasa las pruebas unitarias y las pruebas de error con mocks.
+- **Carga y validación**: `data/sample_sales.csv` → "Archivo válido: 200 filas analizadas" y KPIs.  
+- **KPIs**: coinciden con los cálculos independientes de `tests/test_kpis.py`.  
+- **Visualizaciones**: ambos gráficos se generan y descargan.  
+- **Resumen**: Gemini (o simulación) devuelve resumen, hallazgos y recomendaciones separados de los datos calculados.  
+- **Audio**: ElevenLabs (o tono simulado identificado) reproducible.  
+- **Seguridad**: `.env` ignorado; `.env.example` presente; sin claves en el repositorio.  
+- **Pruebas**: `pytest` pasa completo.
 
 ---
 
 ## Notas operativas y límites
-- **No enviar filas**: por privacidad, nunca enviar filas individuales a Gemini.  
-- **Cuotas**: documentar en README cómo activar modo simulado si se agotan créditos.  
-- **Tamaño de archivo**: limitar tamaño máximo de CSV en la UI (ej. 10 MB) y mostrar advertencia si excede.  
-- **Formato del prompt**: mantener plantilla de prompt en `src/prompts/summary_template.txt` para facilitar revisiones y auditoría.
-
----
+- **No enviar filas** a Gemini.  
+- **Cuotas**: sin clave o sin créditos, la app sigue funcionando en modo simulado.  
+- **Tamaño de archivo**: máximo 10 MB.  
+- **Prompt**: `src/prompts/summary_template.txt`.

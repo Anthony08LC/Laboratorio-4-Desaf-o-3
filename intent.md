@@ -28,9 +28,10 @@ Entregar una aplicación local que valide un CSV, calcule KPIs, genere dos visua
 3. **Accesibilidad por voz**: Convertir el resumen ejecutivo a audio reproducible y mantener control de reproducción en la interfaz.
 
 ## Alcance del MVP
-- Soporte para un CSV con ≥100 filas y ≥5 columnas (incluye al menos 2 numéricas y 1 categórica).  
-- Cálculo de 4 KPIs (ej.: total ventas, promedio por transacción, tasa de conversión, ticket medio) y 2 visualizaciones (serie temporal y distribución por categoría).  
-- Envío a Gemini solo de estadísticas agregadas (no filas completas).  
+- Soporte para un CSV de ventas con ≥100 filas válidas y 6 columnas: `order_id`, `date`, `category` (categórica), `quantity` y `amount` (numéricas) e `is_purchase`.  
+- Informe de calidad de datos: valores faltantes por columna, filas descartadas, identificadores vacíos o duplicados, tipos y fechas inválidas.  
+- Cálculo con Python de 8 KPIs (ventas totales, transacciones, compras, tasa de conversión, ticket medio, unidades vendidas, unidades por compra y precio medio por unidad) y 2 visualizaciones (evolución de ventas y ventas por categoría).  
+- Envío a Gemini solo de estadísticas agregadas (no filas completas); Gemini aporta únicamente la interpretación (resumen, hallazgos y recomendaciones).  
 - Síntesis de voz con ElevenLabs para el resumen ejecutivo.  
 - Historial de sesión con al menos 5 interacciones (resúmenes generados).  
 - Manejo de errores para archivos inválidos, ausencia de claves y fallos de red (mensajes amigables).
@@ -43,8 +44,9 @@ Entregar una aplicación local que valide un CSV, calcule KPIs, genere dos visua
 **Para** confiar en que los indicadores son correctos antes de pedir un resumen.
 
 **Criterios de aceptación**
-- El sistema rechaza archivos con menos de 100 filas o sin las columnas requeridas y muestra un mensaje claro.  
-- Se muestran al menos 4 KPIs calculados con sus fórmulas y valores.  
+- El sistema rechaza archivos con menos de 100 filas válidas, sin las columnas requeridas, con tipos o fechas inválidas o con `order_id` duplicado, y muestra un mensaje claro que indica la línea del problema.  
+- Las filas con valores obligatorios vacíos se descartan y la interfaz informa cuántas y en qué columnas.  
+- Se muestran al menos 4 KPIs calculados con su nombre, valor, fórmula y descripción.  
 - Existe una prueba automatizada que valida el cálculo de al menos un KPI usando datos de ejemplo.
 
 ### Historia 2 — Visualizaciones y contexto
@@ -63,8 +65,8 @@ Entregar una aplicación local que valide un CSV, calcule KPIs, genere dos visua
 **Para** tomar decisiones rápidas y saber qué recomendaciones son verificables.
 
 **Criterios de aceptación**
-- El texto del resumen incluye una sección **Cálculos verificables** con los KPIs usados.  
-- El texto incluye una sección **Interpretación y recomendaciones** claramente separada.  
+- Los **datos calculados** (KPI y estadísticas agregadas) provienen de Python y se muestran separados del texto del modelo.  
+- El texto de Gemini se presenta en secciones **Resumen**, **Hallazgos** y **Recomendaciones**, identificado como interpretación; si menciona cifras que no están en los datos calculados, la app lo advierte.  
 - El resumen se convierte a audio y puede reproducirse/pausarse en la interfaz.  
 - Si no hay clave de Gemini o ElevenLabs, la app muestra un mensaje y permite reproducir una versión simulada claramente marcada.
 
@@ -79,8 +81,8 @@ Entregar una aplicación local que valide un CSV, calcule KPIs, genere dos visua
 
 ## Definición de éxito
 La solución se considera exitosa si:
-- Un CSV de ejemplo (≥100 filas) produce 4 KPIs correctos y 2 visualizaciones reproducibles.  
-- Gemini genera un resumen que incluye las secciones **Cálculos verificables** y **Recomendaciones**; ElevenLabs reproduce el audio del resumen.  
+- Un CSV de ejemplo (≥100 filas) produce al menos 4 KPIs correctos y 2 visualizaciones reproducibles.  
+- Gemini genera un resumen con **Resumen**, **Hallazgos** y **Recomendaciones** basado solo en los datos calculados; ElevenLabs reproduce el audio del resumen.  
 - El repositorio contiene `intent.md`, `spec.md`, `plan.md`, `.env.example`, `README.md` y pruebas automatizadas que simulan ausencia de claves y validan al menos una función de negocio.  
 - Las claves reales no aparecen en el repositorio y las pruebas de error (archivo inválido, falta de clave, fallo de red) muestran mensajes amigables.
 

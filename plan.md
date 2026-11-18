@@ -87,6 +87,25 @@ Este plan divide el trabajo en fases claras, tareas pequeñas, responsables y ev
   - Responsable: *Anthony*.  
   - Evidencia: `README.md`, reflexión en repo.
 
+- **T11**: Revisión integral (calidad de datos, `quantity`, KPI, errores de API, interfaz, documentación y limpieza).  
+  - Responsable: *Anthony*.  
+  - Evidencia: Iteración 5 y `evidencia/pytest_output.txt`.
+
+### Estado de las tareas
+| Tarea | Estado | Comprobación |
+|---|---|---|
+| T1 Estructura | Completada | archivos en el repositorio |
+| T2 Datos de ejemplo | Completada | `test_sample_data.py` |
+| T3 Validación CSV | Completada | `test_kpis.py` (validación y calidad) |
+| T4 KPIs y agregación | Completada | `test_kpis.py` (KPIs) |
+| T5 Visualizaciones | Completada | `test_visuals.py`, `evidencia/*.png` |
+| T6 Interfaz | Completada | `test_app.py`, arranque real de Streamlit |
+| T7 Gemini | Completada con mocks · **prueba real pendiente** | `test_gemini_client.py`; llamada real con clave ficticia → error de clave correctamente detectado |
+| T8 ElevenLabs | Completada con mocks · **prueba real pendiente** | `test_eleven_client.py`; llamada real con clave ficticia → HTTP 401 correctamente detectado |
+| T9 Pruebas de error y seguridad | Completada | pruebas de errores, escaneo de claves |
+| T10 Documentación y reflexión | Parcial: falta revisión personal de `REFLEXION.md` y video | — |
+| T11 Revisión integral | Completada | Iteración 5 |
+
 ---
 
 ## Ciclos de desarrollo (mínimo 3 ciclos obligatorios)
@@ -138,7 +157,7 @@ Cada ciclo debe registrarse en `plan.md` con: problema, prompt usado con el asis
 - [x] Código en `src/`, `app.py` y `data/sample_sales.csv`  
 - [x] `requirements.txt`, `.env.example`, `.gitignore`  
 - [x] Tests en `tests/` y resultados de `pytest` (captura)  
-- [ ] Capturas/video demostrativo   — parcial: `evidencia/` (gráficos, resumen y audio simulados, salida de pytest); falta video/capturas de la UI con claves reales
+- [ ] Capturas/video demostrativo   — parcial: `evidencia/` (gráficos, resumen y audio simulados, salida de pytest, regenerados en la Iteración 5); falta video/capturas de la UI con claves reales
 - [ ] Reflexión crítica (250–400 palabras) — borrador en `REFLEXION.md`, pendiente de revisión personal
 
 ---
@@ -191,7 +210,16 @@ Cada ciclo debe registrarse en `plan.md` con: problema, prompt usado con el asis
 - **Resultado**: `pytest -v` → 43 passed (guardado en `evidencia/pytest_output.txt`). Gráficos revisados visualmente. Resumen simulado contiene las secciones Cálculos verificables / Interpretación / Recomendaciones. Verificación previa al commit: `.env` ausente, sin claves reales, `.venv/` ignorado.
 - **Estado**: resuelto.
 
+### Iteración 5 — Revisión, corrección y optimización (T11) — 2026-11-17
+- **Problema**: Revisión senior del proyecto. Hallazgos: faltaba la columna `quantity`; no se detectaban `order_id` vacíos o duplicados; un CSV de Excel con BOM se rechazaba; el mínimo de 100 filas se comprobaba antes de descartar faltantes; `ticket_mean` y `avg_amount_per_transaction` eran ambiguos (el segundo promediaba montos de transacciones sin compra); `gemini-2.5-flash` ya no se ofrece a proyectos nuevos; los errores de API no distinguían cuota, clave inválida y red; Gemini redactaba los "cálculos verificables"; la interfaz mostraba el resumen del CSV anterior al cargar otro; el paquete `elevenlabs` estaba en `requirements.txt` sin usarse; la serie temporal diaria era muy ruidosa.
+- **Prompt**: "Revisión, corrección y optimización — Laboratorio 4, Reto 3" (revisar y corregir el proyecto existente sin rehacerlo).
+- **Archivos modificados**: `data/generate_sample.py` y `data/sample_sales.csv` (+`quantity`), `src/kpis.py`, `src/visuals.py`, `src/gemini_client.py`, `src/prompts/summary_template.txt`, `src/eleven_client.py`, `app.py`, todos los `tests/` salvo `test_session.py`, `requirements.txt`, `.env.example`, `.gitignore`, `intent.md`, `spec.md`, `plan.md`, `README.md`, `evidencia/`.
+- **Cambios**: informe de calidad de datos y mensajes con número de línea; 8 KPIs definidos en un único `KPI_DEFINITIONS` (se retiran `ticket_mean` y `avg_amount_per_transaction`; se añaden `units_sold`, `avg_units_per_purchase`, `avg_unit_price`); estadísticas agregadas con periodo, categorías y meses; salida JSON de Gemini (resumen, hallazgos, recomendaciones) separada de los datos calculados y verificación de cifras; mensajes específicos de cuota, clave, modelo y red en ambos clientes; interfaz reorganizada.
+- **Resultado**: 1.ª ejecución `1 failed, 88 passed`: `test_sample_shows_kpis_and_charts` esperaba el orden visual de los KPI, pero `AppTest` recorre la cuadrícula por columnas; se corrigió la prueba para comparar el conjunto. Ejecución final registrada en `evidencia/pytest_output.txt`. Llamadas reales con clave ficticia: Gemini → `ClientError 400` → mensaje de clave inválida; ElevenLabs → HTTP 401 → mensaje de clave inválida. `streamlit run app.py` → `/_stcore/health` = ok. Instalación desde cero en un entorno virtual nuevo con `requirements.txt` y `pytest` completo.
+- **KPIs de `data/sample_sales.csv`**: ventas totales 22,677.71; transacciones 200; compras 119; conversión 59.5%; ticket medio 190.57; unidades vendidas 376; unidades por compra 3.16; precio medio por unidad 60.31.
+- **Estado**: resuelto, salvo la prueba con claves reales (pendiente).
+
 ### Pendientes
-- Probar con claves reales de Gemini y ElevenLabs (crear `.env` local) y grabar capturas/video (≤ 2 min).
+- Probar con claves reales de Gemini y ElevenLabs (crear `.env` local) y grabar capturas/video (≤ 2 min). Las pruebas automatizadas usan mocks y no sustituyen esta verificación.
 - Revisar y personalizar `REFLEXION.md`.
 - Subir el repositorio a un remoto (GitHub) si se entrega así.

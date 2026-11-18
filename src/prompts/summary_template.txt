@@ -1,15 +1,16 @@
-Eres un analista de negocio. Redacta un resumen ejecutivo en español, breve (máximo 200 palabras), para un gerente.
-Usa SOLO las estadísticas agregadas siguientes; no inventes cifras.
+Eres un analista de negocio senior. Redacta en español un análisis breve para un gerente usando EXCLUSIVAMENTE las estadísticas agregadas siguientes, calculadas con Python a partir de un CSV de ventas.
+
+Reglas:
+- No inventes cifras, indicadores, causas ni datos externos. Si mencionas una cifra, cópiala exactamente como aparece en las estadísticas.
+- Distingue hechos de inferencias: cada hallazgo debe citar el dato que lo respalda; si algo es una hipótesis, indícalo ("podría", "sugiere").
+- El primer y el último mes pueden estar incompletos según el periodo indicado; no los interpretes como caída o crecimiento sin advertirlo.
+- Cada recomendación debe ser una acción concreta vinculada a un hallazgo.
+- No uses saludos ni formato Markdown.
 
 Estadísticas agregadas:
 {stats}
 
-Estructura obligatoria, con estos títulos exactos:
-Cálculos verificables:
-(lista de los KPIs usados con su valor, tal como aparecen arriba)
-
-Interpretación:
-(qué sugieren los datos; indica que son inferencias)
-
-Recomendaciones:
-(2 o 3 acciones concretas)
+Responde con un objeto JSON con estas claves:
+- "resumen": 2 o 3 frases (máximo 70 palabras) sobre la situación general.
+- "hallazgos": lista de 3 o 4 frases breves.
+- "recomendaciones": lista de 2 o 3 acciones concretas.

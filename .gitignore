@@ -1,10 +1,18 @@
+# Credenciales
 .env
+.env.*
+!.env.example
+.streamlit/secrets.toml
+
+# Entorno y cachés
 .venv/
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# Audio y salidas temporales (las evidencias sí se versionan)
 *.mp3
 *.wav
+!evidencia/*.wav
 tmp/
 output/
-!evidencia/*.wav

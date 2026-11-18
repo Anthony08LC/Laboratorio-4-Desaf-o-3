@@ -1,18 +1,23 @@
-[SIMULADA] Resumen generado localmente sin Gemini.
+RESUMEN EJECUTIVO (SIMULADA, sin Gemini)
+[SIMULADA] Resumen generado localmente, sin Gemini. Los datos calculados son reales, pero este texto no contiene interpretación de un modelo de lenguaje.
 
-Cálculos verificables:
-Ventas totales: 27393.53
+DATOS CALCULADOS (Python, verificables)
+Periodo: 2026-01-02 a 2026-03-31 (89 días)
+Filas analizadas: 200 (descartadas por valores faltantes: 0)
+Ventas totales: 22,677.71
 Transacciones: 200
-Compras: 118
-Tasa de conversión: 59.0%
-Monto medio por compra: 232.15
-Monto medio por transacción: 250.75
-Ingreso medio por transacción: 136.97
-Top categorías por ventas: Electrónica 7324.97, Ropa 5520.74, Libros 5157.23
+Compras: 119
+Tasa de conversión: 59.5%
+Ticket medio: 190.57
+Unidades vendidas: 376
+Unidades por compra: 3.16
+Precio medio por unidad: 60.31
+Ventas por categoría: Electrónica 8,839.33 (39.0%, 69 unidades); Deportes 6,218.94 (27.4%, 91 unidades); Ropa 3,092.12 (13.6%, 80 unidades); Hogar 3,077.36 (13.6%, 70 unidades); Libros 1,449.96 (6.4%, 66 unidades)
+Ventas por mes: 2026-01 7,583.09; 2026-02 8,019.23; 2026-03 7,075.39
 
-Interpretación:
-Texto de demostración: no se realizó interpretación con un modelo de lenguaje.
+HALLAZGOS (interpretación SIMULADA, sin Gemini)
+- [SIMULADA] Sin hallazgos: requieren la interpretación de Gemini.
 
-Recomendaciones:
-- Configurar GEMINI_API_KEY para obtener recomendaciones reales.
-- Revisar los KPIs y gráficos mostrados en la aplicación.
+RECOMENDACIONES (interpretación SIMULADA, sin Gemini)
+- [SIMULADA] Configura GEMINI_API_KEY en .env para obtener recomendaciones generadas por Gemini.
+- [SIMULADA] Mientras tanto, revisa los KPI y gráficos calculados por Python.

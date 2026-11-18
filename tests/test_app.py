@@ -1,7 +1,9 @@
-"""Pruebas de integración de la interfaz con streamlit.testing (sin claves → modo SIMULADA)."""
+"""Pruebas de integración de la interfaz con streamlit.testing (sin claves → modo SIMULADO)."""
 from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
+
+from src.kpis import KPI_DEFINITIONS
 
 APP = str(Path(__file__).parent.parent / "app.py")
 
@@ -12,31 +14,44 @@ def run_app():
     return at
 
 
-def test_initial_screen_shows_key_warnings():
+def run_with_sample():
+    at = run_app()
+    at.sidebar.checkbox[0].check().run()
+    return at
+
+
+def test_initial_screen_shows_key_warnings_and_format():
     at = run_app()
     assert not at.exception
-    warnings = [w.value for w in at.warning]
-    assert any("Gemini no configurada" in w for w in warnings)
-    assert any("ElevenLabs no configurada" in w for w in warnings)
+    warnings = [w.value for w in at.sidebar.warning]
+    assert any("Gemini: clave no configurada" in w for w in warnings)
+    assert any("ElevenLabs: clave no configurada" in w for w in warnings)
+    assert "Carga un archivo CSV" in at.info[0].value
 
 
-def test_end_to_end_with_sample_and_simulated_apis():
-    at = run_app()
-    at.checkbox[0].check().run()
+def test_sample_shows_kpis_and_charts():
+    at = run_with_sample()
     assert not at.exception
-    assert "CSV válido" in at.success[0].value
-    assert len(at.metric) == 7
+    assert "Archivo válido: 200 filas analizadas" in at.success[0].value
+    # AppTest recorre la cuadrícula columna por columna, por eso se compara el conjunto.
+    assert sorted(m.label for m in at.metric) == sorted(d["label"] for d in KPI_DEFINITIONS.values())
+    assert any(s.value == "Visualizaciones" for s in at.subheader)
 
+
+def test_end_to_end_with_simulated_apis():
+    at = run_with_sample()
     at.button[0].click().run()
     assert not at.exception
-    texts = [t.value for t in at.text]
-    assert any("[SIMULADA]" in t and "Recomendaciones" in t for t in texts)
-    assert any("SIMULADA" in m.value for m in at.markdown)
+    warnings = " ".join(w.value for w in at.warning)
+    assert "Clave de Gemini no configurada" in warnings
+    assert "Clave de ElevenLabs no configurada" in warnings
+    markdown = " ".join(m.value for m in at.markdown)
+    assert "SIMULADO" in markdown and "#### Recomendaciones" in markdown
+    assert "no** es una voz generada por ElevenLabs" in markdown
 
 
 def test_history_keeps_at_most_five():
-    at = run_app()
-    at.checkbox[0].check().run()
+    at = run_with_sample()
     for _ in range(6):
         at.button[0].click().run()
     assert not at.exception
