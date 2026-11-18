@@ -111,23 +111,23 @@ Este plan divide el trabajo en fases claras, tareas pequeñas, responsables y ev
 ## Ciclos de desarrollo (mínimo 3 ciclos obligatorios)
 Cada ciclo debe registrarse en `plan.md` con: problema, prompt usado con el asistente, cambio aplicado y resultado.
 
-### Ciclo 1 — Validación y KPI básico
-- **Problema**: Validación CSV fallando con formatos mixtos en `is_purchase`.  
-- **Prompt**: "Implementa `validate_csv` que acepte 0/1, True/False, 'yes'/'no' y convierta `amount` a numérico; devuelve errores amigables."  
-- **Cambio aplicado**: Implementación de `to_bool_series` y coerción de `amount`.  
-- **Resultado**: Tests de validación pasan; se documenta en `plan.md`.
+### Ciclo 1 — Falso rechazo por celdas vacías en `is_purchase` (Iteraciones 2 → 3)
+- **Problema**: La prueba `test_missing_values_rule` falló: `is_purchase inválido: valores no reconocidos (1.0)`. Con una celda vacía, pandas leía la columna como decimal y el valor `1` llegaba como `"1.0"`.
+- **Prompt**: Corrección propia tras el fallo de la Iteración 2 (ver registro de iteraciones).
+- **Cambio aplicado**: `_TRUE`/`_FALSE` aceptan `1.0`/`0.0` y el CSV se lee con `dtype=str`.
+- **Resultado**: 43 pruebas aprobadas en ese momento; el caso borde queda cubierto por prueba.
 
-### Ciclo 2 — Cálculo y test de KPIs
-- **Problema**: `total_sales` no coincide con suma esperada en dataset de prueba.  
-- **Prompt**: "Revisa `compute_kpis` para asegurar que `total_sales` suma solo compras y redondea a 2 decimales."  
-- **Cambio aplicado**: Ajuste de filtrado por `is_purchase == True` y redondeo.  
-- **Resultado**: Test unitario que compara suma esperada pasa.
+### Ciclo 2 — Revisión de calidad de datos y KPI ambiguos (Iteración 5)
+- **Problema**: Faltaba la columna `quantity`; `order_id` vacío o duplicado no se detectaba; un CSV de Excel con BOM se rechazaba; el mínimo de 100 filas se comprobaba antes de descartar faltantes; `ticket_mean` y `avg_amount_per_transaction` eran ambiguos.
+- **Prompt**: "Revisión, corrección y optimización — Laboratorio 4, Reto 3" (revisar y corregir sin rehacer el proyecto).
+- **Cambio aplicado**: Validación de `quantity`, `order_id`, BOM y umbral de filas válidas tras la limpieza; los KPI se definen en un único `KPI_DEFINITIONS` y se retiran los dos ambiguos.
+- **Resultado**: 1.ª ejecución con 1 fallo: `test_sample_shows_kpis_and_charts` esperaba un orden visual que `AppTest` no garantiza; la prueba se corrigió para comparar el conjunto. Ejecución final: 89 aprobadas (`evidencia/pytest_output.txt`).
 
-### Ciclo 3 — Integración de Gemini y manejo de ausencia de clave
-- **Problema**: Sin clave Gemini, la interfaz debe mostrar fallback simulado y no bloquear la experiencia.  
-- **Prompt**: "Implementa wrapper `generate_summary` que use Gemini si hay clave, o devuelva un resumen simulado marcado como 'SIMULADO' si no hay clave o la llamada falla."  
-- **Cambio aplicado**: Wrapper con try/except y flag `simulated_response`.  
-- **Resultado**: Interfaz muestra texto simulado y permite generar audio simulado; pruebas de error documentadas.
+### Ciclo 3 — Errores de API poco claros y redacción de cifras por el modelo (Iteración 5)
+- **Problema**: Cuota, clave inválida, modelo y red devolvían el mismo mensaje; `gemini-2.5-flash` ya no se ofrecía a proyectos nuevos; Gemini redactaba también los cálculos verificables.
+- **Prompt**: Mismo prompt de revisión de la Iteración 5.
+- **Cambio aplicado**: Mensajes específicos por tipo de error en Gemini y ElevenLabs; salida JSON de Gemini (resumen, hallazgos, recomendaciones) separada de los datos calculados; verificación de cifras no presentes en las estadísticas.
+- **Resultado**: Llamadas reales con clave ficticia: Gemini → 400 (clave inválida) y ElevenLabs → 401, ambas detectadas. Pendiente: prueba con claves válidas.
 
 ---
 
