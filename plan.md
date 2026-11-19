@@ -100,8 +100,8 @@ Este plan divide el trabajo en fases claras, tareas pequeñas, responsables y ev
 | T4 KPIs y agregación | Completada | `test_kpis.py` (KPIs) |
 | T5 Visualizaciones | Completada | `test_visuals.py`, `evidencia/*.png` |
 | T6 Interfaz | Completada | `test_app.py`, arranque real de Streamlit |
-| T7 Gemini | Completada con mocks · **prueba real pendiente** | `test_gemini_client.py`; llamada real con clave ficticia → error de clave correctamente detectado |
-| T8 ElevenLabs | Completada con mocks · **prueba real pendiente** | `test_eleven_client.py`; llamada real con clave ficticia → HTTP 401 correctamente detectado |
+| T7 Gemini | Completada | `test_gemini_client.py`; prueba real con clave válida y `gemini-4-hydrogen`: respuesta `simulado: False`; en la app, 503 y 504 del servicio manejados con mensaje y respuesta SIMULADA |
+| T8 ElevenLabs | Completada | `test_eleven_client.py`; prueba real con clave válida: audio `audio/mpeg` generado (37 659 bytes); reproducción en la app verificada |
 | T9 Pruebas de error y seguridad | Completada | pruebas de errores, escaneo de claves |
 | T10 Documentación y reflexión | Parcial: falta revisión personal de `REFLEXION.md` y video | — |
 | T11 Revisión integral | Completada | Iteración 5 |
@@ -157,7 +157,7 @@ Cada ciclo debe registrarse en `plan.md` con: problema, prompt usado con el asis
 - [x] Código en `src/`, `app.py` y `data/sample_sales.csv`  
 - [x] `requirements.txt`, `.env.example`, `.gitignore`  
 - [x] Tests en `tests/` y resultados de `pytest` (captura)  
-- [ ] Capturas/video demostrativo   — parcial: `evidencia/` (gráficos, resumen y audio simulados, salida de pytest, regenerados en la Iteración 5); falta video/capturas de la UI con claves reales
+- [x] Capturas demostrativas con claves reales: `evidencia/PruebaDesafio01.png` (resumen generado por Gemini), `evidencia/PruebaDesafio02.png` (reproductor y historial), `evidencia/AudioDePrueba.mp3` (audio del resumen) y `evidencia/PruebaDesafio03.png` (error manejado: clave no configurada y respuesta SIMULADA)
 - [ ] Reflexión crítica (250–400 palabras) — borrador en `REFLEXION.md`, pendiente de revisión personal
 
 ---
@@ -219,7 +219,17 @@ Cada ciclo debe registrarse en `plan.md` con: problema, prompt usado con el asis
 - **KPIs de `data/sample_sales.csv`**: ventas totales 22,677.71; transacciones 200; compras 119; conversión 59.5%; ticket medio 190.57; unidades vendidas 376; unidades por compra 3.16; precio medio por unidad 60.31.
 - **Estado**: resuelto, salvo la prueba con claves reales (pendiente).
 
+### Iteración 6 — Verificación con claves reales (T7, T8) — 2026-11-18
+- **Problema**: Las pruebas automatizadas usan mocks. Hacía falta comprobar la integración real con claves válidas.
+- **Prompt**: Pruebas manuales en el equipo local: `prueba_elevenlabs.py` y `prueba_gemini.py` (scripts temporales, no versionados).
+- **Resultados**:
+  - ElevenLabs: audio `audio/mpeg` de 37 659 bytes, `simulado: False`.
+  - Gemini: dos intentos devolvieron `ServerError 503`; en la app, una solicitud devolvió 504 Gateway Timeout tras ~60 s. Tras cambiar `GEMINI_MODEL` a `gemini-4-hydrogen` y repetir la prueba, la respuesta fue `simulado: False` sin error.
+- **Cambio aplicado**: `GEMINI_MODEL` en el `.env` local. No se cambió `DEFAULT_MODEL` del código.
+- **Resultado**: T7 y T8 verificadas con claves reales. Pendiente: capturas o video de la app.
+- **Estado**: resuelto para las integraciones; pendiente la evidencia visual.
+
 ### Pendientes
-- Probar con claves reales de Gemini y ElevenLabs (crear `.env` local) y grabar capturas/video (≤ 2 min). Las pruebas automatizadas usan mocks y no sustituyen esta verificación.
+- Revisar y personalizar `REFLEXION.md` (250–400 palabras).
 - Revisar y personalizar `REFLEXION.md`.
 - Subir el repositorio a un remoto (GitHub) si se entrega así.
