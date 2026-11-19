@@ -100,8 +100,8 @@ Este plan divide el trabajo en fases claras, tareas pequeñas, responsables y ev
 | T4 KPIs y agregación | Completada | `test_kpis.py` (KPIs) |
 | T5 Visualizaciones | Completada | `test_visuals.py`, `evidencia/*.png` |
 | T6 Interfaz | Completada | `test_app.py`, arranque real de Streamlit |
-| T7 Gemini | Completada con mocks · **prueba real pendiente** | `test_gemini_client.py`; llamada real con clave ficticia → error de clave correctamente detectado |
-| T8 ElevenLabs | Completada con mocks · **prueba real pendiente** | `test_eleven_client.py`; llamada real con clave ficticia → HTTP 401 correctamente detectado |
+| T7 Gemini | Completada | `test_gemini_client.py`; prueba real con clave válida y `gemini-4-hydrogen`: respuesta `simulado: False`; en la app, 503 y 504 del servicio manejados con mensaje y respuesta SIMULADA |
+| T8 ElevenLabs | Completada | `test_eleven_client.py`; prueba real con clave válida: audio `audio/mpeg` generado (37 659 bytes); reproducción en la app verificada |
 | T9 Pruebas de error y seguridad | Completada | pruebas de errores, escaneo de claves |
 | T10 Documentación y reflexión | Parcial: falta revisión personal de `REFLEXION.md` y video | — |
 | T11 Revisión integral | Completada | Iteración 5 |
@@ -111,23 +111,23 @@ Este plan divide el trabajo en fases claras, tareas pequeñas, responsables y ev
 ## Ciclos de desarrollo (mínimo 3 ciclos obligatorios)
 Cada ciclo debe registrarse en `plan.md` con: problema, prompt usado con el asistente, cambio aplicado y resultado.
 
-### Ciclo 1 — Validación y KPI básico
-- **Problema**: Validación CSV fallando con formatos mixtos en `is_purchase`.  
-- **Prompt**: "Implementa `validate_csv` que acepte 0/1, True/False, 'yes'/'no' y convierta `amount` a numérico; devuelve errores amigables."  
-- **Cambio aplicado**: Implementación de `to_bool_series` y coerción de `amount`.  
-- **Resultado**: Tests de validación pasan; se documenta en `plan.md`.
+### Ciclo 1 — Falso rechazo por celdas vacías en `is_purchase` (Iteraciones 2 → 3)
+- **Problema**: La prueba `test_missing_values_rule` falló: `is_purchase inválido: valores no reconocidos (1.0)`. Con una celda vacía, pandas leía la columna como decimal y el valor `1` llegaba como `"1.0"`.
+- **Prompt**: Corrección propia tras el fallo de la Iteración 2 (ver registro de iteraciones).
+- **Cambio aplicado**: `_TRUE`/`_FALSE` aceptan `1.0`/`0.0` y el CSV se lee con `dtype=str`.
+- **Resultado**: 43 pruebas aprobadas en ese momento; el caso borde queda cubierto por prueba.
 
-### Ciclo 2 — Cálculo y test de KPIs
-- **Problema**: `total_sales` no coincide con suma esperada en dataset de prueba.  
-- **Prompt**: "Revisa `compute_kpis` para asegurar que `total_sales` suma solo compras y redondea a 2 decimales."  
-- **Cambio aplicado**: Ajuste de filtrado por `is_purchase == True` y redondeo.  
-- **Resultado**: Test unitario que compara suma esperada pasa.
+### Ciclo 2 — Revisión de calidad de datos y KPI ambiguos (Iteración 5)
+- **Problema**: Faltaba la columna `quantity`; `order_id` vacío o duplicado no se detectaba; un CSV de Excel con BOM se rechazaba; el mínimo de 100 filas se comprobaba antes de descartar faltantes; `ticket_mean` y `avg_amount_per_transaction` eran ambiguos.
+- **Prompt**: "Revisión, corrección y optimización — Laboratorio 4, Reto 3" (revisar y corregir sin rehacer el proyecto).
+- **Cambio aplicado**: Validación de `quantity`, `order_id`, BOM y umbral de filas válidas tras la limpieza; los KPI se definen en un único `KPI_DEFINITIONS` y se retiran los dos ambiguos.
+- **Resultado**: 1.ª ejecución con 1 fallo: `test_sample_shows_kpis_and_charts` esperaba un orden visual que `AppTest` no garantiza; la prueba se corrigió para comparar el conjunto. Ejecución final: 89 aprobadas (`evidencia/pytest_output.txt`).
 
-### Ciclo 3 — Integración de Gemini y manejo de ausencia de clave
-- **Problema**: Sin clave Gemini, la interfaz debe mostrar fallback simulado y no bloquear la experiencia.  
-- **Prompt**: "Implementa wrapper `generate_summary` que use Gemini si hay clave, o devuelva un resumen simulado marcado como 'SIMULADO' si no hay clave o la llamada falla."  
-- **Cambio aplicado**: Wrapper con try/except y flag `simulated_response`.  
-- **Resultado**: Interfaz muestra texto simulado y permite generar audio simulado; pruebas de error documentadas.
+### Ciclo 3 — Errores de API poco claros y redacción de cifras por el modelo (Iteración 5)
+- **Problema**: Cuota, clave inválida, modelo y red devolvían el mismo mensaje; `gemini-2.5-flash` ya no se ofrecía a proyectos nuevos; Gemini redactaba también los cálculos verificables.
+- **Prompt**: Mismo prompt de revisión de la Iteración 5.
+- **Cambio aplicado**: Mensajes específicos por tipo de error en Gemini y ElevenLabs; salida JSON de Gemini (resumen, hallazgos, recomendaciones) separada de los datos calculados; verificación de cifras no presentes en las estadísticas.
+- **Resultado**: Llamadas reales con clave ficticia: Gemini → 400 (clave inválida) y ElevenLabs → 401, ambas detectadas. Pendiente: prueba con claves válidas.
 
 ---
 
@@ -157,7 +157,7 @@ Cada ciclo debe registrarse en `plan.md` con: problema, prompt usado con el asis
 - [x] Código en `src/`, `app.py` y `data/sample_sales.csv`  
 - [x] `requirements.txt`, `.env.example`, `.gitignore`  
 - [x] Tests en `tests/` y resultados de `pytest` (captura)  
-- [ ] Capturas/video demostrativo   — parcial: `evidencia/` (gráficos, resumen y audio simulados, salida de pytest, regenerados en la Iteración 5); falta video/capturas de la UI con claves reales
+- [x] Capturas demostrativas con claves reales: `evidencia/PruebaDesafio01.png` (resumen generado por Gemini), `evidencia/PruebaDesafio02.png` (reproductor y historial), `evidencia/AudioDePrueba.mp3` (audio del resumen) y `evidencia/PruebaDesafio03.png` (error manejado: clave no configurada y respuesta SIMULADA)
 - [ ] Reflexión crítica (250–400 palabras) — borrador en `REFLEXION.md`, pendiente de revisión personal
 
 ---
@@ -219,7 +219,17 @@ Cada ciclo debe registrarse en `plan.md` con: problema, prompt usado con el asis
 - **KPIs de `data/sample_sales.csv`**: ventas totales 22,677.71; transacciones 200; compras 119; conversión 59.5%; ticket medio 190.57; unidades vendidas 376; unidades por compra 3.16; precio medio por unidad 60.31.
 - **Estado**: resuelto, salvo la prueba con claves reales (pendiente).
 
+### Iteración 6 — Verificación con claves reales (T7, T8) — 2026-11-18
+- **Problema**: Las pruebas automatizadas usan mocks. Hacía falta comprobar la integración real con claves válidas.
+- **Prompt**: Pruebas manuales en el equipo local: `prueba_elevenlabs.py` y `prueba_gemini.py` (scripts temporales, no versionados).
+- **Resultados**:
+  - ElevenLabs: audio `audio/mpeg` de 37 659 bytes, `simulado: False`.
+  - Gemini: dos intentos devolvieron `ServerError 503`; en la app, una solicitud devolvió 504 Gateway Timeout tras ~60 s. Tras cambiar `GEMINI_MODEL` a `gemini-4-hydrogen` y repetir la prueba, la respuesta fue `simulado: False` sin error.
+- **Cambio aplicado**: `GEMINI_MODEL` en el `.env` local. No se cambió `DEFAULT_MODEL` del código.
+- **Resultado**: T7 y T8 verificadas con claves reales. Pendiente: capturas o video de la app.
+- **Estado**: resuelto para las integraciones; pendiente la evidencia visual.
+
 ### Pendientes
-- Probar con claves reales de Gemini y ElevenLabs (crear `.env` local) y grabar capturas/video (≤ 2 min). Las pruebas automatizadas usan mocks y no sustituyen esta verificación.
+- Revisar y personalizar `REFLEXION.md` (250–400 palabras).
 - Revisar y personalizar `REFLEXION.md`.
 - Subir el repositorio a un remoto (GitHub) si se entrega así.
